@@ -32,6 +32,6 @@ References
 
 [Goelz2022TISPN]: **Multiple Hypothesis Testing Framework for Spatial Signals**. M. Gölz, A.M. Zoubir and V. Koivunen, IEEE Transactions on Signal and Information Processing over networks, July 2022, [DOI:10.1109/TSIPN.2022.3190735](https://ieeexplore.ieee.org/abstract/document/9830080).
 
-[Goelz2022CISS]:**Estimating Test Statistic Distributions for Multiple Hypothesis Testing in Sensor Networks** M. Gölz, A.M. Zoubir and V. Koivunen, 2022 56th Annual Conference on Information Sciences and Systems (CISS), Princeton, NJ, February 2022, [10.1109/CISS53076.2022.9751186](https://ieeexplore.ieee.org/abstract/document/9751186).
+[Goelz2022CISS]: **Estimating Test Statistic Distributions for Multiple Hypothesis Testing in Sensor Networks** M. Gölz, A.M. Zoubir and V. Koivunen, 2022 56th Annual Conference on Information Sciences and Systems (CISS), Princeton, NJ, February 2022, [10.1109/CISS53076.2022.9751186](https://ieeexplore.ieee.org/abstract/document/9751186).
 
-[Goelz2022ICASSP]:**Improving Inference for Spatial Signals by Contextual False Discovery Rates**. M. Gölz, A.M. Zoubir and V. Koivunen, 2022 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP2022), Singapore, [DOI:10.1109/ICASSP43922.2022.9747596](https://ieeexplore.ieee.org/abstract/document/9747596).
+[Goelz2022ICASSP]: **Improving Inference for Spatial Signals by Contextual False Discovery Rates**. M. Gölz, A.M. Zoubir and V. Koivunen, 2022 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP2022), Singapore, [DOI:10.1109/ICASSP43922.2022.9747596](https://ieeexplore.ieee.org/abstract/document/9747596).
