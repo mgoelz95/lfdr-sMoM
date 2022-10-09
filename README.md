@@ -1,9 +1,9 @@
 # lfdr-sMoM
 
-Spatial Multiple Hypothesis Testing with Local False Discovery Rates (spatial_mht)
+Spatial Multiple Hypothesis Testing with Local False Discovery Rates (spatialmht)
 ==========================================
 
-The `spatial_mht` package provides an implementation of the multiple hypothesis testing methods for spatial data introduced in the references below. This empirical Bayes method estimates the local false discovery rates (lfdr's) with the spectral method of moments (sMoM) and allows to assert the state of a spatial field at the sensors and in between sensors. The method identifies anomalies within the observation area with false positive control (w.r.t. the False Discovery Rate).
+The `spatialmht` package provides an implementation of the multiple hypothesis testing methods for spatial data introduced in the references below. This empirical Bayes method estimates the local false discovery rates (lfdr's) with the spectral method of moments (sMoM) and allows to assert the state of a spatial field at the sensors and in between sensors. The method identifies anomalies within the observation area with false positive control (w.r.t. the False Discovery Rate).
 
 Improvements of the base-line method lfdr-sMoM from [Goelz2022TISPN] were proposed in subsequent works [Goelz2022CISS] and [Goelz2022ICASSP]. These are also implemented in this package. The details on the proposed methods are found in the references given below.
 
@@ -13,10 +13,10 @@ Installation
 To install the package:
 
 ```
-pip install spatial_mht
+pip install spatialmht
 ```
 
-You can also download the repository here and use the directory without_installation to run the code without installing the package locally.
+Then go to with_pip_install and run file main.py in this directory. If you do not want to use pip to install the package, you can simply download this repository and run main.py from directory without_pip_install.
 
 Example
 ------------------
