@@ -386,9 +386,7 @@ def get_par_spa_var(dat_path, par="stan"):
     except FileNotFoundError:
         if par == "stan":
             bw_grid = np.arange(.01, 20, .5)
-            bw_grid = np.arange(.01, 20, 1)
             ker_vec = ['epa', 'gauss', 'exp', 'lin', 'cos']
-            ker_vec = ['gauss']
             laws_sthr = np.array([.9])  # As recommended in [Cai2021]
             pi0_max = .99
             with open(os.path.join(dat_path, "..", "spa_var_par_")
