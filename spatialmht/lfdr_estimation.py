@@ -35,7 +35,7 @@ from scipy.spatial.distance import jensenshannon
 from field_handling import RadioSpatialField, RadioSpatialFieldEstimated
 import smom_functions
 
-from fdrs import smooth_fdr
+#from .fdrs import smooth_fdr
 from rbf.interpolate import RBFInterpolant
 
 def apply_pounds_estimator(par_list, typ='emp'):

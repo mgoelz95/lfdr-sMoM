@@ -29,6 +29,9 @@ Remark: For all pre-defined scenarios, the number of independent repititions (
 
 PLEASE CITE THE CORRESPONDING PAPERS IF YOU USE THIS CODE IN YOUR WORK!
 
+IMPORTANT NOTICE: EVERYTHING RELATED TO COMPETITORS FDRS HAS BEEN COMMENTED, AS
+MAINTAINERS DON'T MAINTAIN THE REPO ANYMORE AND INCLUSION YIELDS ERRORS.
+
 @author: Martin Gölz
 """
 
@@ -105,7 +108,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # %% setup: what will become a package
-sys.path.insert(0, os.path.join('..', 'spatialmht'))
+sys.path.insert(0, os.path.join('..', 'package'))
+sys.path.insert(0, os.path.join('..', 'package', 'utils'))
 
 import field_handling as fd_hdl
 import lfdr_estimation as lfdr_est
@@ -517,25 +521,29 @@ if DO_VAR_SPATIAL_PRIOR:
         'clfdr-sMoM-SNS at all grid points', sen=False)
 
 # %% application of FDRS
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    [clfdrs_sen_fdrs, pi0_sen_fdrs] = (lfdr_est.est_clfdrs(
-        est_fd, res_path, SAVE_RESULTS, "fdrs", 50))
-    det_res_sen_fdrs = det.apply_lfdr_detection(
-        clfdrs_sen_fdrs, est_fd.r_tru, alp_vec,
-        'FDRS at sensors', sen=True)
+# FDRS does not work anymore
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+    # [clfdrs_sen_fdrs, pi0_sen_fdrs] = (lfdr_est.est_clfdrs(
+    #     est_fd, res_path, SAVE_RESULTS, "fdrs", 50))
+    # det_res_sen_fdrs = det.apply_lfdr_detection(
+    #     clfdrs_sen_fdrs, est_fd.r_tru, alp_vec,
+    #     'FDRS at sensors', sen=True)
 
-    if fully_loaded:
-        clfdrs_ipl_fdrs = clfdrs_sen_fdrs
-    else:
-        # Get lfdrs at all grid points by TPS interpolation
-        clfdrs_ipl_fdrs = lfdr_est.ipl_lfdrs(
-            res_path, 'fdrs', clfdrs_sen_fdrs, est_fd.sen_cds, est_fd.dim,
-            fd.n)
+    # if fully_loaded:
+    #     clfdrs_ipl_fdrs = clfdrs_sen_fdrs
+    # else:
+    #     # Get lfdrs at all grid points by TPS interpolation
+    #     clfdrs_ipl_fdrs = lfdr_est.ipl_lfdrs(
+    #         res_path, 'fdrs', clfdrs_sen_fdrs, est_fd.sen_cds, est_fd.dim,
+    #         fd.n)
 
-    # Detection results at all grid points
-    det_res_ipl_fdrs = det.apply_lfdr_detection(
-        clfdrs_ipl_fdrs, fd.r_tru, alp_vec,
-        'FDRS', sen=False)
+    # # Detection results at all grid points
+    # det_res_ipl_fdrs = det.apply_lfdr_detection(
+    #     clfdrs_ipl_fdrs, fd.r_tru, alp_vec,
+    #     'FDRS', sen=False)
+    # print(
+    #     'fdrs does not work anymore, since code is no longer maintained' +
+    #     ' by developers.')
 # %% application of clfdr-sMoM-EM-SLS and clfdr-sMoM-EM-SNS
 if DO_VAR_SPATIAL_PRIOR and DO_EM:
     [clfdrs_sen_smom_em_sls, pi0_sen_smom_em_sls] = (lfdr_est.est_clfdrs(
@@ -695,11 +703,12 @@ if DO_EM:
     plot_label_lst.append('lfdr-sMoM-EM')
     plotting_lst.append(det_res_sen_smom_em)
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    linestyle_lst.append('-.')
-    color_lst.append('purple')
-    plot_label_lst.append('FDRS')
-    plotting_lst.append(det_res_sen_fdrs)
+#if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+# FDRS does not work anymore
+    # linestyle_lst.append('-.')
+    # color_lst.append('purple')
+    # plot_label_lst.append('FDRS')
+    # plotting_lst.append(det_res_sen_fdrs)
 
 if DO_VAR_SPATIAL_PRIOR:
     linestyle_lst.append('o--')
@@ -763,11 +772,12 @@ if DO_EM:
     plot_label_lst.append('lfdr-sMoM-EM')
     plotting_lst.append(det_res_ipl_smom_em)
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    linestyle_lst.append('-.')
-    color_lst.append('purple')
-    plot_label_lst.append('FDRS')
-    plotting_lst.append(det_res_ipl_fdrs)
+# FDRS does not work anymore
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     linestyle_lst.append('-.')
+#     color_lst.append('purple')
+#     plot_label_lst.append('FDRS')
+#     plotting_lst.append(det_res_ipl_fdrs)
 
 if DO_VAR_SPATIAL_PRIOR:
     linestyle_lst.append('o--')
@@ -858,9 +868,10 @@ if DO_EM:
     table_label_lst.append('lfdr-sMoM-EM')
     table_res_list.append(det_res_ipl_smom_em[alp_vec_idx])
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    table_label_lst.append('FDRS')
-    table_res_list.append(det_res_ipl_fdrs[alp_vec_idx])
+# FDRS does not work anymore
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     table_label_lst.append('FDRS')
+#     table_res_list.append(det_res_ipl_fdrs[alp_vec_idx])
 
 if DO_VAR_SPATIAL_PRIOR:
     table_label_lst.append('clfdr-sMoM-SLS')
@@ -908,9 +919,9 @@ if DO_EM:
     table_label_lst.append('lfdr-sMoM-EM')
     table_res_list.append(det_res_sen_smom_em[alp_vec_idx])
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    table_label_lst.append('FDRS')
-    table_res_list.append(det_res_sen_fdrs[alp_vec_idx])
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     table_label_lst.append('FDRS')
+#     table_res_list.append(det_res_sen_fdrs[alp_vec_idx])
 
 if DO_VAR_SPATIAL_PRIOR:
     table_label_lst.append('clfdr-sMoM-SLS')

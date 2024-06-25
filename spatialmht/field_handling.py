@@ -819,8 +819,15 @@ class RadioSpatialField(SpatialField):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             #Initialization of alternative indeces
-            alt_ind = np.repeat((np.array([np.empty(gp) for gp in np.arange(
-                0, self.n_MC, 1)]))[:, np.newaxis], self.n_src, axis=1)
+            alt_ind = []
+            for mc in np.arange(self.n_MC):
+                this_mc_lst = []
+                for k in np.arange(self.n_src):
+                    new_to_append = [0]
+                    this_mc_lst.append(new_to_append)
+                alt_ind.append(this_mc_lst)
+            # alt_ind = np.repeat((np.array([np.empty(gp) for gp in np.arange(
+            #     0, self.n_MC, 1)]))[:, np.newaxis], self.n_src, axis=1)
 
         #If we want ellipses: Random precision matrices
         if ran_pre:
@@ -859,16 +866,16 @@ class RadioSpatialField(SpatialField):
                     if not sha_fa:#no shadow fading
                         if add_tra:#the received signals add up
                             self.X[mc, :] += 10**((sig)/10)
-                            alt_ind[mc, k] = np.where(
+                            alt_ind[mc][k] = np.where(
                                 self.X[mc, :]>= s_r_min)[0]
                         else:#the received signals do not add up
                             can_2D = (np.where(np.all(
                                 [dis_gp_cen[:,:,k,mc] <= rad_ev[mc, k],
                                   X>= 0, Y >= 0],
                                 axis=0)))
-                            alt_ind[mc,k] =  self.crd_to_sgl_id_2D(
+                            alt_ind[mc][k] =  self.crd_to_sgl_id_2D(
                                 (Y[can_2D], X[can_2D]))
-                            self.X[mc, alt_ind[mc,k]] += 10**((self.A[
+                            self.X[mc, alt_ind[mc][k]] += 10**((self.A[
                                   -1, k, mc] + K_dB - 10*np.log10(dis_gp_cen[
                                 can_2D[0], can_2D[1], k, mc])- 0)/10)
                     else:#shadow fading
@@ -877,14 +884,14 @@ class RadioSpatialField(SpatialField):
                             y_crd[cen_ev[mc, k]], sig_s).reshape(self.n))
                         if add_tra:#the received signals add up
                             self.X[mc, :] += 10**((sig + sf)/10)
-                            alt_ind[mc, k] = np.where(
+                            alt_ind[mc][k] = np.where(
                                 self.X[mc, :] >= s_r_min)[0]
                         else:#the received signals do not add up
                             rec_sig = 10**((sig + sf)/10)
-                            alt_ind[mc, k] = np.where(rec_sig >= s_r_min)[0]
-                            self.X[mc, alt_ind[mc,k]] = np.max(
-                                (rec_sig[alt_ind[mc, k]],
-                                self.X[mc, alt_ind[mc,k]]), axis=0)
+                            alt_ind[mc][k] = np.where(rec_sig >= s_r_min)[0]
+                            self.X[mc, alt_ind[mc][k]] = np.max(
+                                (rec_sig[alt_ind[mc][k]],
+                                self.X[mc, alt_ind[mc][k]]), axis=0)
                 #Nulling the signal below the minimum received power to obtain
                 #the true detection pattern. Needed only for add_tra = true.
                 self.X[mc, np.where(self.X[mc, :]<s_r_min)[0]] = 0
@@ -919,16 +926,16 @@ class RadioSpatialField(SpatialField):
                     if not sha_fa:#no shadow fading
                         if add_tra:#the received signals add up
                             self.X[mc, :] += 10**((sig)/10)
-                            alt_ind[mc, k] = np.where(
+                            alt_ind[mc][k] = np.where(
                                 self.X[mc, :]>= s_r_min)[0]
                         else:#the received signals do not add up
                             can_2D = (np.where(np.all(
                                 [dis_gp_cen[:,:,k,mc] <= rad_ev[mc, k],
                                   X>= 0, Y >= 0],
                                 axis=0)))
-                            alt_ind[mc,k] =  self.crd_to_sgl_id_2D(
+                            alt_ind[mc][k] =  self.crd_to_sgl_id_2D(
                                 (Y[can_2D], X[can_2D]))
-                            self.X[mc, alt_ind[mc,k]] += 10**((self.A[
+                            self.X[mc, alt_ind[mc][k]] += 10**((self.A[
                                   -1, k, mc] + K_dB - 10*np.log10(dis_gp_cen[
                                 can_2D[0], can_2D[1], k, mc])- 0)/10)
                     else:#shadow fading
@@ -937,14 +944,14 @@ class RadioSpatialField(SpatialField):
                             y_crd[cen_ev[mc, k]], sig_s).reshape(self.n))
                         if add_tra:#the received signals add up
                             self.X[mc, :] += 10**((sig + sf)/10)
-                            alt_ind[mc, k] = np.where(
+                            alt_ind[mc][k] = np.where(
                                 self.X[mc, :] >= s_r_min)[0]
                         else:#the received signals do not add up
                             rec_sig = 10**((sig + sf)/10)
-                            alt_ind[mc, k] = np.where(rec_sig >= s_r_min)[0]
-                            self.X[mc, alt_ind[mc,k]] = np.max(
-                                (rec_sig[alt_ind[mc, k]],
-                                self.X[mc, alt_ind[mc,k]]), axis=0)
+                            alt_ind[mc][k] = np.where(rec_sig >= s_r_min)[0]
+                            self.X[mc, alt_ind[mc][k]] = np.max(
+                                (rec_sig[alt_ind[mc][k]],
+                                self.X[mc, alt_ind[mc][k]]), axis=0)
                 #Nulling the signal below the minimum received power to obtain
                 #the true detection pattern. Needed only for add_tra = true.
                 self.X[mc, np.where(self.X[mc, :]<s_r_min)[0]] = 0
@@ -957,7 +964,7 @@ class RadioSpatialField(SpatialField):
         self.Q = np.zeros((self.n_MC, self.n, self.n_src))
         for k in np.arange(1, self.n_src+1, 1):
             for mc in np.arange(0,self.n_MC, 1):
-                self.Q[mc, alt_ind[mc,k-1], k-1] = 1
+                self.Q[mc, alt_ind[mc][k-1], k-1] = 1
 
         #The actual size of alternative events
         n_ev = np.sum(self.Q==1, axis=1)
