@@ -108,8 +108,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # %% setup: what will become a package
-sys.path.insert(0, os.path.join('..', 'package'))
-sys.path.insert(0, os.path.join('..', 'package', 'utils'))
+sys.path.insert(0, os.path.join('..', 'spatialmht'))
+
 
 import field_handling as fd_hdl
 import lfdr_estimation as lfdr_est
