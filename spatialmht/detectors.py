@@ -51,6 +51,8 @@ class DetectionResult(object):
             # evaluation
             self.r_tru[mis_mat == 1] = 0
             self.r_det[mis_mat == 1] = 0
+            # Taking nans (so where no data was available out of evaluation)
+            self.r_tru[np.isnan(self.r_det)] = np.nan
             self.nam = nam
             self.tar = tar
             self.thr = thr
@@ -66,12 +68,11 @@ class DetectionResult(object):
             self.t[self.r_tru == 1] = self.r_det[self.r_tru == 1] == 0
             self.u[self.r_tru == 0] = self.r_det[self.r_tru == 0] == 0
             self.fdp = np.sum(self.v, axis=1)/(
-                np.sum(self.r_det, axis=1)+(
-                np.sum(self.r_det, axis=1)== 0)*1)
-            self.tdp = np.sum(self.s, axis=1)/(np.sum(self.r_tru,
-                                                      axis=1)+
-                                      (np.sum(self.r_tru,
-                                              axis=1) == 0)*1)
+                np.nansum(self.r_det, axis=1)+(
+                np.nansum(self.r_det, axis=1)== 0)*1)
+            self.tdp = np.sum(self.s, axis=1)/(
+                np.nansum(self.r_tru, axis=1) + (
+                    np.nansum(self.r_tru, axis=1) == 0)*1)
             #Perfomance measures: Averages
             self.fdr = np.mean(self.fdp, axis=0)
             self.pow = np.mean(self.tdp, axis=0)
@@ -351,9 +352,17 @@ def bh_loc_bayes(lfdr, alp):
     @Martin Goelz
     """
     srt_idx = np.argsort(lfdr, axis=1)
-    bfdr = (np.repeat(1/(np.arange(
-        1, lfdr.shape[1] + 1, 1))[:, np.newaxis].transpose(), lfdr.shape[0],
-        axis=0))*np.cumsum(np.take_along_axis(lfdr, srt_idx, axis=1), axis=1)
+    normalization = np.ones(lfdr.shape)
+    for mc in np.arange(normalization.shape[0]):
+        normalization[mc, 0:np.sum(~np.isnan(lfdr[mc, :]))] = 1/np.arange(
+            1, np.sum(~np.isnan(lfdr[mc, :])) + 1, 1)
+    bfdr = normalization *np.cumsum(
+        np.take_along_axis(lfdr, srt_idx, axis=1), axis=1)
+    # this was previously used, but doesnt work when there are different number
+    # of tested hypotheses for each MC run (due to nans).
+    # bfdr = (np.repeat(1/(np.arange(
+    #     1, lfdr.shape[1] + 1, 1))[:, np.newaxis].transpose(), lfdr.shape[0],
+    #     axis=0))*np.cumsum(np.take_along_axis(lfdr, srt_idx, axis=1), axis=1)
     rej_thr = np.zeros(lfdr.shape[0])
     r = np.zeros(lfdr.shape)
     for mc in np.arange(0, lfdr.shape[0], 1):
@@ -362,6 +371,9 @@ def bh_loc_bayes(lfdr, alp):
         except IndexError:
             rej_thr[mc] = -1
         r[mc, srt_idx[mc, np.arange(0, int(rej_thr[mc]+1), 1)].astype(int)] = 1
+    
+    # make sure that nans are also r = np.nan
+    r[np.isnan(lfdr)] = np.nan
     return r
 
 

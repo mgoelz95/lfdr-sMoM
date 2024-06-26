@@ -136,12 +136,18 @@ def est_clfdrs(fd, res_path, sav_res, est_met, par_lst):
     except FileNotFoundError:
         print("LFDRs haven't been stored for this method yet!")
         sys.exit()
+
     f1_p = lfdr_res['f1_p_hat'][0]
     clfdrs = np.zeros((fd.n_MC, fd.n))
     for mc in np.arange(fd.n_MC):
         clfdrs[mc, :] = (
         (1 - pi1_spa_var[mc, :]) / (
                 (1 - pi1_spa_var[mc, :]) + pi1_spa_var[mc, :] * f1_p[mc, :]))
+        
+    # where no data is available, make sure nothing gets detected
+    f1_p[np.isnan(fd.p)] = np.nan
+    clfdrs[np.isnan(fd.p)] = np.nan
+
     return clfdrs, 1 - pi1_spa_var
 
 def est_lfdrs(fd, res_path, sav_res, est_met, par_lst):
@@ -579,12 +585,12 @@ def est_lfdrs_smom(fd, res_path, sav_res, par_lst, partition):
         # ------ Applying smom -------
         # Uncomment for for loop, useful for debugging
         # (f1_p, pi0, smom_lam, smom_a, f_p, F_p, diff_edf_est_cdf, sel_k,
-        #   sel_d, ex_time) = for_loop_smom(fd, par_type, dat_path, partition,
-        #                           quant_bits, sensoring_thr)
+        #    sel_d, ex_time) = for_loop_smom(fd, par_type, dat_path, partition,
+        #                            quant_bits, sensoring_thr)
         # Uncomment for parallelization
         (f1_p, pi0, smom_lam, smom_a, f_p, F_p, diff_edf_est_cdf, sel_k, sel_d,
-          ex_time) = parallel_smom(fd, par_type, dat_path, max_wrk, partition,
-                                  quant_bits, sensoring_thr)
+         ex_time) = parallel_smom(fd, par_type, dat_path, max_wrk, partition,
+                                 quant_bits, sensoring_thr)
 
         # ------ Applying smom -------
         f1_p[np.where(np.isnan(f1_p))] = np.inf
@@ -595,6 +601,12 @@ def est_lfdrs_smom(fd, res_path, sav_res, par_lst, partition):
         lfdr = (np.transpose(np.tile(pi0, (fd.n, 1))))/f_p
         lfdr[np.where(np.isnan(lfdr))] = 0
         lfdr[np.where(lfdr > 1)] = 1
+        
+        # where no data is available, make sure nothing gets detected
+        f1_p[np.isnan(fd.p)] = np.nan
+        f_p[np.isnan(fd.p)] = np.nan
+        lfdr[np.isnan(fd.p)] = np.nan
+
         if sav_res:
             res = pd.DataFrame(
                     {"f_p_hat": [f_p],
@@ -689,6 +701,11 @@ def est_lfdrs_smom_em(fd, res_path, sav_res, par_lst, partition):
             np.where(np.isnan(lfdr))] = 0
         lfdr[np.where(lfdr > 1)] = 1
 
+        # where no data is available, make sure nothing gets detected
+        f1_p[np.isnan(fd.p)] = np.nan
+        f_p[np.isnan(fd.p)] = np.nan
+        lfdr[np.isnan(fd.p)] = np.nan
+
         if sav_res:
             res = pd.DataFrame(
                     {"f_p_hat": [f_p],
@@ -768,9 +785,14 @@ def est_pi0_pounds(typ, par_list):
         # Overestimate the alternative proportion
         p_grid = np.arange(1/1000, 1, 1/1000)
         # Check if this is an averaged parameter model or not
-        pdf = get_pdf_multivariate_mbm(
-                p_grid, a[0:k, 0:d], b[0:k, 0:d], w[0:k], d, k)
-        pi0 = np.nanmin(pdf)
+        try:
+            pdf = get_pdf_multivariate_mbm(
+                    p_grid, a[0:k, 0:d], b[0:k, 0:d], w[0:k], d, k)
+            pi0 = np.nanmin(pdf)
+        except ValueError:
+            # if evaluation of pdf failed. typically when only nans, so no data
+            # anywhere.
+            pi0 = 1
     elif typ == 'emp':
         pdf = par_list
         pi0 = np.max((0, np.nanmin(pdf)))
@@ -810,6 +832,11 @@ def est_pi1_spa_var_sls(fd, res_path, sav_res, par_lst):
                     f"search running: {kbw_idx + 1:2} / "
                     f"{bw_grid.size:2}", end="")
                 par_pl = mp.Pool(num_wrk)
+                # For maintenance: For loop
+                # for mc in np.arange(fd.n_MC):
+                #     pi1_spa_var[ker_idx, kbw_idx, mc, :] = single_run_sls(
+                #         lfdrs[mc, :], fd.sen_cds[mc, :, :], kbw_val, ker)
+                # parallel for performance
                 rtns_lfdr_knor = par_pl.starmap(
                     partial(
                         single_run_sls, kernel=ker, h=kbw_val),
@@ -826,18 +853,30 @@ def est_pi1_spa_var_sls(fd, res_path, sav_res, par_lst):
                     obj[mc, ker_idx, kbw_idx] = (np.nansum(
                         (pi1_spa_var[ker_idx, kbw_idx, mc, :] * f1_z[mc, :] +
                          (1 - pi1_spa_var[ker_idx, kbw_idx, mc, :])
-                         * stats.norm.pdf(fd.z[mc, :])))/fd.n)
-        pi1_spa_var = np.nan_to_num(pi1_spa_var, nan=1 - pi0_max)
+                         * stats.norm.pdf(fd.z[mc, :])))/np.sum(
+                             ~np.isnan(lfdrs[mc, :])))
+                    # only replace those nans where nan is caused by pi1
+                    # estiamtion, not by nan lfdr
+                    pi1_spa_var[
+                        ker_idx, kbw_idx, mc, ~np.isnan(lfdrs[mc, :])] = (
+                            np.nan_to_num(pi1_spa_var[
+                                ker_idx, kbw_idx, mc, ~np.isnan(lfdrs[mc, :])],
+                                nan=1 - pi0_max))
+
         opt_idx = np.zeros((fd.n_MC, 2), dtype=int)
         pi1_spa_var_opt = np.zeros((fd.n_MC, fd.n))
         for mc in np.arange(fd.n_MC):
-            opt_idx[mc, :] = np.unravel_index(
-                np.argmax(
-                    obj[mc, :, :]), (len(ker_vec), bw_grid.size))
-            opt_idx1, opt_idx2 = opt_idx[mc, :]
-            pi1_spa_var_opt[mc, :] = np.squeeze(
-                pi1_spa_var[opt_idx1, opt_idx2, mc, :])
-
+            try:
+                opt_idx[mc, :] = np.unravel_index(
+                    np.nanargmax(
+                        obj[mc, :, :]), (len(ker_vec), bw_grid.size))
+                opt_idx1, opt_idx2 = opt_idx[mc, :]
+                pi1_spa_var_opt[mc, :] = np.squeeze(
+                    pi1_spa_var[opt_idx1, opt_idx2, mc, :])
+            except ValueError:
+                # in case there are only nans!
+                pi1_spa_var_opt[mc, :] = np.squeeze(
+                    pi1_spa_var[0, 0, mc, :])
         if sav_res:
             res = pd.DataFrame(
                 {"pi1_spa_var": [pi1_spa_var_opt]})
@@ -891,10 +930,16 @@ def est_pi1_spa_var_sns(fd, res_path, sav_res, par_lst):
                                 exclude_sen=True),
                             zip(fd.p, fd.sen_idx))
                     par_pl.close()
+                    # For maintenance: For loop
+                    # rtns = []
+                    # for mc in np.arange(fd.n_MC):
+                    #     rtns.append(single_run_sns(
+                    #         fd.p[mc, :], fd.sen_idx[mc, :], fd.dim, sthr_val,
+                    #         kbw_val, kernel=ker, exclude_sen=True))
                     for mc in np.arange(fd.n_MC):
                         aux = rtns[mc]
                         pi1_spa_var[ker_idx, kbw_idx, sthr_idx, mc, :] = aux[
-                            fd.sen_idx[mc, :]]
+                                        fd.sen_idx[mc, :]]
                     del aux
         print("")
         print(f"\rclfdr-{base_str}-SNS completed!")
@@ -908,20 +953,31 @@ def est_pi1_spa_var_sns(fd, res_path, sav_res, par_lst):
                                     kbw_idx, sthr_idx, mc, :] * f1_z[mc, :] +
                                     (1 - pi1_spa_var[ker_idx,
                                         kbw_idx, sthr_idx, mc, :])
-                                    * stats.norm.pdf(fd.z[mc, :])))/fd.n)
-
-        pi1_spa_var = np.nan_to_num(pi1_spa_var, nan=1-pi0_max)
+                                    * stats.norm.pdf(fd.z[mc, :])))/np.sum(
+                                        ~np.isnan(fd.p[mc, :])))
+                        # only replace those nans where nan is caused by pi1
+                        # estiamtion, not by nan lfdr
+                        pi1_spa_var[ker_idx, kbw_idx, sthr_idx, mc,
+                                    ~np.isnan(fd.p[mc, :])] = (
+                                        np.nan_to_num(pi1_spa_var[
+                                            ker_idx, kbw_idx, sthr_idx, mc,
+                                            ~np.isnan(fd.p[mc, :])],
+                                            nan=1 - pi0_max))
 
         opt_idx = np.zeros((fd.n_MC, 3), dtype=int)
         pi1_spa_var_opt = np.zeros((fd.n_MC, fd.n))
         for mc in np.arange(fd.n_MC):
-            opt_idx[mc, :] = np.unravel_index(
-                np.argmax(obj[mc, :, :, :]),
-                (len(ker_vec), bw_grid.size, laws_sthr.size))
-            opt_idx1, opt_idx2, opt_idx3 = opt_idx[mc, :]
-            pi1_spa_var_opt[mc, :] = np.squeeze(
-                pi1_spa_var[opt_idx1, opt_idx2, opt_idx3, mc, :])
-
+            try:
+                opt_idx[mc, :] = np.unravel_index(
+                    np.nanargmax(obj[mc, :, :, :]),
+                    (len(ker_vec), bw_grid.size, laws_sthr.size))
+                opt_idx1, opt_idx2, opt_idx3 = opt_idx[mc, :]
+                pi1_spa_var_opt[mc, :] = np.squeeze(
+                    pi1_spa_var[opt_idx1, opt_idx2, opt_idx3, mc, :])
+            except ValueError:
+                # in case there are only nans!
+                pi1_spa_var_opt[mc, :] = np.squeeze(
+                    pi1_spa_var[0, 0, 0, mc, :])
         if sav_res:
             res = pd.DataFrame(
                 {"pi1_spa_var": [pi1_spa_var_opt]
@@ -1724,8 +1780,10 @@ def ipl_lfdrs(res_path, res_str, lfdrs_sen, sen_cds, fd_dim, num_gp,
             np.array((np.arange(num_gp)/fd_dim[0])).astype(int))])).transpose()
         lfdrs_int = np.zeros((nMC, num_gp))
         for mc in np.arange(0, nMC, 1):
-            rbfi = RBFInterpolant(sen_cds[mc, :, :], lfdrs_sen[mc, :],
-                                  phi=rbf, sigma=0)
+            non_nan_idc = ~np.isnan(lfdrs_sen[mc, :])
+            rbfi = RBFInterpolant(
+                sen_cds[mc, non_nan_idc, :], lfdrs_sen[mc, non_nan_idc],
+                phi=rbf, sigma=0)
             lfdrs_int[mc, :] = rbfi(gp_crds).reshape(np.prod(fd_dim))
         for mc in np.arange(lfdrs_sen.shape[0]):
             lfdrs_int[mc, :] = clip_lfdrs(lfdrs_int[mc, :])
@@ -1822,8 +1880,11 @@ def sns_pis_2D_aux_func(p, dims, tau, h, kernel, exclude_sen=True):
                 else:
                     print("Not a valid kernel!")
                     sys.exit()
-                p_est[i, j] = np.min((
-                    1-1e-5, np.sum(kht[scr_idx])/((1-tau)*np.sum(kht[pv_vec>0]))))
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore")
+                    p_est[i, j] = np.min((
+                        1-1e-5, np.sum(kht[scr_idx])/((1-tau)*np.sum(
+                            kht[pv_vec>0]))))
     else:
         for i in np.arange(dims[0]):
             for j in np.arange(dims[1]):
@@ -2055,8 +2116,8 @@ def single_run_sls(lfdr, sen_cds, h, kernel):
 
     Parameters
     ----------
-    p_val_vec : numpy array
-        The p-value vector for a single MC run.
+    lfdr : numpy array
+        The lfdr vector for a single MC run.
     sen_cds: numpy array
         The MC x x-coordinate x y-coordinate matrix of sensor locations.
     h : float
@@ -2103,21 +2164,29 @@ def single_run_sls(lfdr, sen_cds, h, kernel):
         # pi1_est[i] = 1 - np.sum(lfdr_vec * kht)/np.sum(kht)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
-            pi1_est[i] = 1 - (np.sum(ker_fct(h, dis_vec) * lfdr)
-                              / np.sum(ker_fct(h, dis_vec)))
+            pi1_est[i] = 1 - (np.sum(
+                ker_fct(h, dis_vec[~np.isnan(lfdr)]) * lfdr[~np.isnan(lfdr)])
+                / np.sum(ker_fct(h, dis_vec[~np.isnan(lfdr)])))
+    pi1_est[np.isnan(lfdr)] = np.nan
     return pi1_est.flatten()
 
 def single_run_sns(p_val_vec, sen_idx_vec, siz, laws_sthr, h, kernel,
                     exclude_sen):
+    non_nan_idc = ~np.isnan(p_val_vec)
     p_val = np.zeros(np.prod(siz))
-    p_val[sen_idx_vec] = p_val_vec
+    p_val[sen_idx_vec[non_nan_idc]] = p_val_vec[non_nan_idc]
     p_val = p_val.reshape(siz)
 
-    _, bh_th = bh(p_val_vec[np.newaxis, :], laws_sthr, get_pval_thr_num=True)
-    pis_hat = sns_pis_2D_aux_func(p_val, siz,
-                                   tau=bh_th[0], h=h, kernel=kernel,
+    if np.sum(~non_nan_idc==0): # in case there are any non-nan pvals
+        _, bh_th = bh(p_val_vec[np.newaxis, non_nan_idc], laws_sthr,
+                  get_pval_thr_num=True)
+        pis_hat = sns_pis_2D_aux_func(p_val, siz,
+                                   tau=bh_th[0][0], h=h, kernel=kernel,
                                    exclude_sen=exclude_sen)
-    return pis_hat
+        pis_hat[sen_idx_vec[np.isnan(p_val_vec)]] = np.nan
+    else:
+        pis_hat = np.zeros(siz) + np.nan
+    return pis_hat.flatten()
 
 def single_run_smom_em(dat, a0, pi0, cvg_thr):
         use_a_0 = np.all(
@@ -2129,7 +2198,10 @@ def single_run_smom_em(dat, a0, pi0, cvg_thr):
         mod_ord_sel = np.size(pi0_active)
         start_time = time.time()
 
-        (pi_k, a_k, llr_iter) = mbm_em(dat, pi0_active, a0_active, cvg_thr)
+        dat_no_nan =  dat[~np.isnan(dat)]
+
+        (pi_k, a_k, llr_iter) = mbm_em(
+            dat_no_nan, pi0_active, a0_active, cvg_thr)
         num_it = np.size(llr_iter) - 1
 
         # PDF
@@ -2201,15 +2273,38 @@ def single_run_smom_random(p_val, dat_path, par_type, quant_bits,
             loaded = pickle.load(input)
             (bns, bin_wdt, grd) = loaded[0], loaded[1], loaded[2]
 
-    # Spatial division of the data in tiles
+    # division of the data in tiles
     N = p_val.size
+
+    p_val_no_nan = p_val[~np.isnan(p_val)]
+
+    if (N - np.sum(np.isnan(p_val))) < 10:
+        sel_k = 1
+        sel_d = 1
+        a_hat_rtd = np.zeros((np.max(mom_k), np.max(mom_d))) 
+        b_hat_rtd = np.zeros((np.max(mom_k), np.max(mom_d)))
+        w_hat_rtd = np.zeros((np.max(mom_k)))
+
+        a_hat_rtd[0:sel_k, 0:sel_d] = 1
+        b_hat_rtd[0:sel_k, 0:sel_d] = 1
+        w_hat_rtd[0:sel_k] = 1
+
+        ex_time = 0
+        beta_pdf_hat_av = np.ones(p_val.shape) + np.nan
+        beta_cdf_hat_av = np.ones(p_val.shape) + np.nan
+        diff_best = np.inf
+
+        return (a_hat_rtd, w_hat_rtd, beta_pdf_hat_av,
+            beta_cdf_hat_av, diff_best, sel_k, sel_d, ex_time)
+
+    N = N - np.sum(np.isnan(p_val))
 
     # Specification of the tile parameters
     num_tiles = np.floor(N/mom_d).astype(int)
     N_tilde = num_tiles*mom_d.astype(int)
 
     # Computation of the edf on the grid for g.o.f
-    grd_emp_prob = np.histogram(p_val, bins=bns, density=True)[0]*bin_wdt
+    grd_emp_prob = np.histogram(p_val_no_nan, bins=bns, density=True)[0]*bin_wdt
     grd_edf = np.cumsum(grd_emp_prob)
 
     diff_best = np.inf
@@ -2247,41 +2342,44 @@ def single_run_smom_random(p_val, dat_path, par_type, quant_bits,
         if (not np.isnan(sel_d)) and sel_d < mom_d[d_idx-1]:
             break
         for tr_idx in np.arange(0, mom_n_tr, 1):
-            shuffled_pval_idx = np.random.permutation(
-                np.arange(N))[0:N_tilde[d_idx]].reshape(
-                    (num_tiles[d_idx], mom_d[d_idx]))
-            p_div = p_val[shuffled_pval_idx]
-            p_div[np.where(p_div == 0)] = np.min(p_div[np.nonzero(p_div)])
+            try:
+                shuffled_pval_idx = np.random.permutation(
+                    np.arange(N))[0:N_tilde[d_idx]].reshape(
+                        (num_tiles[d_idx], mom_d[d_idx]))
+                p_div = p_val_no_nan[shuffled_pval_idx]
+                p_div[np.where(p_div == 0)] = np.min(p_div[np.nonzero(p_div)])
 
-            # Parameter estimation by spectral method of moments
-            diff_all_k = np.zeros(mom_k.size)
-            for (k_idx, k) in enumerate(mom_k):
-                if k < mom_d[d_idx]:  # Size of multivariate vectors limits
-                    # the number of mixture components.
-                    a_hat, b_hat, w_hat, grd_pdf, grd_cdf = (
-                        smom_functions.learnMBM(p_div, num_tiles[d_idx],
-                        mom_d[d_idx], k, grd, mom_reps_eta, gaussian_eta=True))
-                    # Goodness of fit
-                    diff_k = dis_msr_fct(grd_pdf, grd_cdf)
-                    try:
-                        min_idx = np.nanargmin(diff_k)
-                        diff_all_k[k_idx] = diff_k[min_idx]
-                        if (diff_all_k[k_idx]
-                            - diff_all_k[np.max((k_idx - 1, 0))] <= 0):
-                            if diff_all_k[k_idx] - diff_best <= 0:
-                                a_hat_win = np.copy(a_hat[min_idx, :, :])
-                                b_hat_win = np.copy(b_hat[min_idx, :, :])
-                                w_hat_win = np.copy(w_hat[min_idx, :])
-                                diff_best = diff_all_k[k_idx]
-                                sel_k = k
-                                sel_d = mom_d[d_idx]
-                        else:
-                            break
-                    except ValueError:
-                        # print(['No valid result for this parametrization'
-                        #       ' with averaging!'])
-                        failed_at_least_once = True
-
+                # Parameter estimation by spectral method of moments
+                diff_all_k = np.zeros(mom_k.size)
+                for (k_idx, k) in enumerate(mom_k):
+                    if k < mom_d[d_idx]:  # Size of multivariate vectors limits
+                        # the number of mixture components.
+                        a_hat, b_hat, w_hat, grd_pdf, grd_cdf = (
+                            smom_functions.learnMBM(p_div, num_tiles[d_idx],
+                            mom_d[d_idx], k, grd, mom_reps_eta, gaussian_eta=True))
+                        # Goodness of fit
+                        diff_k = dis_msr_fct(grd_pdf, grd_cdf)
+                        try:
+                            min_idx = np.nanargmin(diff_k)
+                            diff_all_k[k_idx] = diff_k[min_idx]
+                            if (diff_all_k[k_idx]
+                                - diff_all_k[np.max((k_idx - 1, 0))] <= 0):
+                                if diff_all_k[k_idx] - diff_best <= 0:
+                                    a_hat_win = np.copy(a_hat[min_idx, :, :])
+                                    b_hat_win = np.copy(b_hat[min_idx, :, :])
+                                    w_hat_win = np.copy(w_hat[min_idx, :])
+                                    diff_best = diff_all_k[k_idx]
+                                    sel_k = k
+                                    sel_d = mom_d[d_idx]
+                            else:
+                                break
+                        except ValueError:
+                            # print(['No valid result for this parametrization'
+                            #       ' with averaging!'])
+                            failed_at_least_once = True
+            except np.linalg.LinAlgError:
+                print("Array contained nan or inf! This permutation failed. Trying again.")
+                tr_idx = tr_idx - 1
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
         # PDF marginalized over coordinates
