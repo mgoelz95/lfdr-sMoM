@@ -103,7 +103,6 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 # %% setup: what will become a package
 import spatialmht.field_handling as fd_hdl
 import spatialmht.lfdr_estimation as lfdr_est
@@ -121,10 +120,10 @@ FIELD_MODE = "radio"  # Alternatives: radio, non-spatial, custom
 
 if FIELD_MODE == 'radio':
     # Change the values here to use different scenarios/configurations
-    FD_SCEN = "scA_TSIPN"  # name of simulated field scenario, see
+    FD_SCEN = "scB_ICASSP"  # name of simulated field scenario, see
     # parameters.py for all options and for defining your own.
     # Pre-defined options: sc{A, B, C}_{TSIPN, CISS, ICASSP}
-    SEN_CFG = "cfg2_TSIPN"  # name of sensor configuration, see
+    SEN_CFG = "stan_300"  # name of sensor configuration, see
     # parameters.py for all options and for defining your own.
     # Pre-defined options: cfg{1, 2, 3}_TSIPN, stan_{300, 1000, 3000}
 elif FIELD_MODE == 'custom':
@@ -512,25 +511,25 @@ if DO_VAR_SPATIAL_PRIOR:
         'clfdr-sMoM-SNS at all grid points', sen=False)
 
 # %% application of FDRS
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    [clfdrs_sen_fdrs, pi0_sen_fdrs] = (lfdr_est.est_clfdrs(
-        est_fd, res_path, SAVE_RESULTS, "fdrs", 50))
-    det_res_sen_fdrs = det.apply_lfdr_detection(
-        clfdrs_sen_fdrs, est_fd.r_tru, alp_vec,
-        'FDRS at sensors', sen=True)
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+    # [clfdrs_sen_fdrs, pi0_sen_fdrs] = (lfdr_est.est_clfdrs(
+    #     est_fd, res_path, SAVE_RESULTS, "fdrs", 50))
+    # det_res_sen_fdrs = det.apply_lfdr_detection(
+    #     clfdrs_sen_fdrs, est_fd.r_tru, alp_vec,
+    #     'FDRS at sensors', sen=True)
 
-    if fully_loaded:
-        clfdrs_ipl_fdrs = clfdrs_sen_fdrs
-    else:
-        # Get lfdrs at all grid points by TPS interpolation
-        clfdrs_ipl_fdrs = lfdr_est.ipl_lfdrs(
-            res_path, 'fdrs', clfdrs_sen_fdrs, est_fd.sen_cds, est_fd.dim,
-            fd.n)
+    # if fully_loaded:
+    #     clfdrs_ipl_fdrs = clfdrs_sen_fdrs
+    # else:
+    #     # Get lfdrs at all grid points by TPS interpolation
+    #     clfdrs_ipl_fdrs = lfdr_est.ipl_lfdrs(
+    #         res_path, 'fdrs', clfdrs_sen_fdrs, est_fd.sen_cds, est_fd.dim,
+    #         fd.n)
 
-    # Detection results at all grid points
-    det_res_ipl_fdrs = det.apply_lfdr_detection(
-        clfdrs_ipl_fdrs, fd.r_tru, alp_vec,
-        'FDRS', sen=False)
+    # # Detection results at all grid points
+    # det_res_ipl_fdrs = det.apply_lfdr_detection(
+    #     clfdrs_ipl_fdrs, fd.r_tru, alp_vec,
+    #     'FDRS', sen=False)
 # %% application of clfdr-sMoM-EM-SLS and clfdr-sMoM-EM-SNS
 if DO_VAR_SPATIAL_PRIOR and DO_EM:
     [clfdrs_sen_smom_em_sls, pi0_sen_smom_em_sls] = (lfdr_est.est_clfdrs(
@@ -690,11 +689,11 @@ if DO_EM:
     plot_label_lst.append('lfdr-sMoM-EM')
     plotting_lst.append(det_res_sen_smom_em)
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    linestyle_lst.append('-.')
-    color_lst.append('purple')
-    plot_label_lst.append('FDRS')
-    plotting_lst.append(det_res_sen_fdrs)
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     linestyle_lst.append('-.')
+#     color_lst.append('purple')
+#     plot_label_lst.append('FDRS')
+#     plotting_lst.append(det_res_sen_fdrs)
 
 if DO_VAR_SPATIAL_PRIOR:
     linestyle_lst.append('o--')
@@ -758,11 +757,11 @@ if DO_EM:
     plot_label_lst.append('lfdr-sMoM-EM')
     plotting_lst.append(det_res_ipl_smom_em)
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    linestyle_lst.append('-.')
-    color_lst.append('purple')
-    plot_label_lst.append('FDRS')
-    plotting_lst.append(det_res_ipl_fdrs)
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     linestyle_lst.append('-.')
+#     color_lst.append('purple')
+#     plot_label_lst.append('FDRS')
+#     plotting_lst.append(det_res_ipl_fdrs)
 
 if DO_VAR_SPATIAL_PRIOR:
     linestyle_lst.append('o--')
@@ -853,9 +852,9 @@ if DO_EM:
     table_label_lst.append('lfdr-sMoM-EM')
     table_res_list.append(det_res_ipl_smom_em[alp_vec_idx])
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    table_label_lst.append('FDRS')
-    table_res_list.append(det_res_ipl_fdrs[alp_vec_idx])
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     table_label_lst.append('FDRS')
+#     table_res_list.append(det_res_ipl_fdrs[alp_vec_idx])
 
 if DO_VAR_SPATIAL_PRIOR:
     table_label_lst.append('clfdr-sMoM-SLS')
@@ -903,9 +902,9 @@ if DO_EM:
     table_label_lst.append('lfdr-sMoM-EM')
     table_res_list.append(det_res_sen_smom_em[alp_vec_idx])
 
-if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
-    table_label_lst.append('FDRS')
-    table_res_list.append(det_res_sen_fdrs[alp_vec_idx])
+# if DO_VAR_SPATIAL_PRIOR and DO_COMPETITORS:
+#     table_label_lst.append('FDRS')
+#     table_res_list.append(det_res_sen_fdrs[alp_vec_idx])
 
 if DO_VAR_SPATIAL_PRIOR:
     table_label_lst.append('clfdr-sMoM-SLS')
