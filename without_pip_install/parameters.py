@@ -200,6 +200,23 @@ def get_par_fd_scen(fd_scen, dat_path):
             sha_fa = True
             prop_env = "urb"  # suffix dependning on whether urban or suburban
             # is considered
+        elif fd_scen == 'sc_3MT':
+            fd_dim = (100, 100)
+            n_MC = 20
+            n_sam = 1024
+            n_src = 2
+            ran_cen = True
+            ran_rad = False
+            ran_pre = False
+            add_tra = False
+
+            # Ground truth desired null proportion of pixels
+            pi0_des = .6
+
+            # Do we use a field with shadow fading?
+            sha_fa = True
+            prop_env = "urb"  # suffix dependning on whether urban or suburban
+            # is considered
         else:
             try:
                 custom_vls = pd.read_pickle(
@@ -328,6 +345,14 @@ def get_par_sen_cfg(sen_cfg, dat_path):
             # Used for first column in Table 2 of [Goelz2022ICASSP], Fig 2 of
             # [Goelz2022ICASSP] and Fig 4 of [Goelz2022CISS]
             n_sen = np.array([300])
+            n_sam_per_sen = np.array([256])
+            var_sen_loc = np.array([True])  # If true, sensor locations varying
+            # with MC run
+            sen_hom = np.array([True])  # If true, sensors are homogeneously
+            # distributed across field
+        elif sen_cfg == '3MT_1500':
+            # USED FOR 3MT!
+            n_sen = np.array([1500])
             n_sam_per_sen = np.array([256])
             var_sen_loc = np.array([True])  # If true, sensor locations varying
             # with MC run
