@@ -5,7 +5,7 @@ Spatial Multiple Hypothesis Testing with Local False Discovery Rates (spatialmht
 
 The `spatialmht` package provides an implementation of the multiple hypothesis testing methods for spatial data introduced in the references below. This empirical Bayes method estimates the local false discovery rates (lfdr's) with the spectral method of moments (sMoM) and allows to assert the state of a spatial field at the sensors and in between sensors. The method identifies anomalies within the observation area with false positive control (w.r.t. the False Discovery Rate).
 
-Improvements of the base-line method lfdr-sMoM from [Goelz2022TISPN] were proposed in subsequent works [Goelz2022CISS] and [Goelz2022ICASSP]. These are also implemented in this package. The details on the proposed methods are found in the references given below.
+Improvements of the base-line method lfdr-sMoM from [Goelz2022TISPN] were proposed in subsequent works [Goelz2022CISS] and [Goelz2022ICASSP]. These are also implemented in this package. The details on the proposed methods are found in the references given below. In addition, this package is also used in the spatial inference network (SpInNet), a real-world sensor network implementation used to detect the presence of people via humidity measurements. Code for SpInNet and data recorded with it is available at https://github.com/mgoelz95/SpInNet, the corresponding paper is [Goelz2024EUSIPCO].
 
 Installation
 ------------
@@ -35,3 +35,5 @@ References
 [Goelz2022CISS]: **Estimating Test Statistic Distributions for Multiple Hypothesis Testing in Sensor Networks** M. Gölz, A.M. Zoubir and V. Koivunen, 2022 56th Annual Conference on Information Sciences and Systems (CISS), Princeton, NJ, February 2022, [10.1109/CISS53076.2022.9751186](https://ieeexplore.ieee.org/abstract/document/9751186).
 
 [Goelz2022ICASSP]: **Improving Inference for Spatial Signals by Contextual False Discovery Rates**. M. Gölz, A.M. Zoubir and V. Koivunen, 2022 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP2022), Singapore, [DOI:10.1109/ICASSP43922.2022.9747596](https://ieeexplore.ieee.org/abstract/document/9747596).
+
+[Goelz2024EUSIPCO]: **Spatial Inference Network: Indoor Proximity Detection via Multiple Hypothesis Testing**. M. Gölz, L. Okubo Baudenbacher, A.M. Zoubir and V. Koivunen, European Signal Processing Conference (EUSIPCO) 2024, August  2024, [DOI:TBA].
