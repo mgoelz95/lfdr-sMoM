@@ -802,6 +802,6 @@ def print_fdrs_and_pow(alp_val, res, labels):
 def show_sensors_in_field(sen_crds, ax=None, **kwargs):
     for sen in range(sen_crds[0].size):
         rect = plt.Rectangle(
-            (sen_crds[1][sen], sen_crds[0][sen]), 1, 1, fill=False, **kwargs)
+            (sen_crds[1][sen], sen_crds[0][sen]), 1, 1, **kwargs)
         ax = ax or plt.gca()
         ax.add_patch(rect)
